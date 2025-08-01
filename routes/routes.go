@@ -17,6 +17,8 @@ func SetupRoutes(app *fiber.App,
 	public := app.Group("/api")
 	public.Post("/register", authHandler.Register)
 	public.Post("/login", authHandler.Login)
+	// Forgot password route
+	public.Post("/reset-password", authHandler.ResetPasswordHandler) // Reset password route
 	public.Get("/products", productHandler.GetProducts)
 	public.Get("/products/:id", productHandler.GetProduct)
 

@@ -4,17 +4,19 @@ package main
 import (
 	"ecommerce-api/database"
 	"ecommerce-api/handlers"
-	"ecommerce-api/middleware"
+	
 	"ecommerce-api/repositories"
 	"ecommerce-api/service"
 	"log"
-	"os"
+	
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"ecommerce-api/routes"
+	"ecommerce-api/config"
+	
 )
 
 func main() {
@@ -22,14 +24,21 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
+	cfg := config.New()
 
 	// Initialize database connection
 	database.Connect()
 
 	// Setup dependency injection
 	userRepo := repositories.NewUserRepository(database.DB)
-	authService := service.NewAuthService(userRepo, os.Getenv("JWT_SECRET"))
-	authHandler := handler.NewAuthHandler(authService)
+	authService := service.NewAuthService(userRepo, cfg.JWT_SECRET)
+
+	// Initialize email service
+	emailService, err := service.NewEmailService(cfg.EMAIL_API_KEY, cfg.EMAIL_SENDER," ")
+	if err != nil {
+		log.Fatalf("Failed to initialize email service: %v", err)
+	}
+	authHandler := handler.NewAuthHandler(authService, emailService)
 
 	orderRepo := repositories.NewOrderRepository(database.DB)
 	productRepo := repositories.NewProductRepository(database.DB)
@@ -55,12 +64,7 @@ func main() {
 	// MaxAge: 86400, // Cache CORS preflight for 1 day
 }))
 	app.Use(logger.New())
-	app.Use("/protected", middleware.JWTProtected(userRepo))
-
-	// Routes
-	app.Post("/api/auth/register", authHandler.Register)
-	app.Post("/api/auth/login", authHandler.Login)
-
+	
 	// Start server
-	log.Fatal(app.Listen(":" + os.Getenv("PORT")))
+	log.Fatal(app.Listen(":" + cfg.AppPort))
 }

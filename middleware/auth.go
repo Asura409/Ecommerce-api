@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func JWTProtected(userRepo repositories.UserRepository) fiber.Handler {
+func JWTProtected(userRepo *repositories.UserRepository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
